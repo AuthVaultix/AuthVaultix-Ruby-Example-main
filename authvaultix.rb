@@ -14,7 +14,7 @@ class AuthVaultix
   Secret        = String.new("")
   Version       = String.new("")
 
-  BASE_URL = "https://api.authvaultix.com/api/1.2/" # ✅ Single Base URL here
+  BASE_URL = "https://authvaultix.com/api/1.0/" # ✅ Single Base URL here
 
   AppInfo = { "name" => "", "version" => "" }
   UserData = {}
