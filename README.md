@@ -20,11 +20,8 @@ Configure your application by providing your credentials from the AuthVaultix da
 ```ruby
 require './authvaultix.rb'
 
-# Create instance
-auth = AuthVaultix.new
-
-# Set credentials
-auth.Api(
+# Initialize the client
+auth = AuthVaultixClient.new(
     "YourAppName",
     "YourOwnerID",
     "YourAppSecret",
@@ -32,7 +29,7 @@ auth.Api(
 )
 
 # Initialize connection
-auth.Init
+auth.init
 ```
 
 ### 2. User Authentication
@@ -40,13 +37,13 @@ Perform login or registration using the built-in methods.
 
 ```ruby
 # Standard Login
-auth.Login("username", "password")
+auth.login("username", "password")
 
 # Registration with License Key
-auth.Register("username", "password", "LICENSE-KEY")
+auth.register("username", "password", "LICENSE-KEY")
 
 # Simple License Login
-auth.License("LICENSE-KEY")
+auth.license_login("LICENSE-KEY")
 ```
 
 ---
@@ -60,14 +57,44 @@ auth.License("LICENSE-KEY")
 
 ## 🛠️ API Reference
 
+### Authentication & Session
 | Method | Description |
 | :--- | :--- |
-| `Api(name, ownerid, secret, version)` | Sets your application credentials. |
-| `Init` | Initializes the session with the AuthVaultix server. |
-| `Login(username, password)` | Authenticates an existing user. |
-| `Register(username, password, key)` | Registers a new user with a license key. |
-| `License(key)` | Authenticates using only a license key. |
-| `print_user_info` | Displays current user details and subscriptions. |
+| `init` | Initializes the secure session with the API. |
+| `login(username, password)` | Authenticates the user and binds HWID. |
+| `register(username, password, key, email?)` | Creates a new user with a license key. |
+| `license_login(license)` | Authenticates directly via license key. |
+| `check` | Validates if the current session is still active. |
+| `logout` | Invalidates current session and logs out. |
+
+### Account Management
+| Method | Description |
+| :--- | :--- |
+| `upgrade(username, license)` | Upgrades user's account/subscription. |
+| `forgot_password(username, email)` | Triggers a password reset email. |
+| `change_username(new_username)` | Changes the current user's username. |
+
+### Security & Blacklist
+| Method | Description |
+| :--- | :--- |
+| `ban(reason)` | Bans the currently authenticated user. |
+| `check_blacklist` | Checks if the machine HWID is blacklisted. |
+| `log(message)` | Sends a log to the AuthVaultix dashboard. |
+
+### Variables & Data
+| Method | Description |
+| :--- | :--- |
+| `get_global_var(varid)` | Fetches a global server-side variable. |
+| `get_var(var_name)` | Fetches a user-specific server-side variable. |
+| `set_var(var_name, value)` | Sets a user-specific variable. |
+| `download(fileid)` | Securely downloads a file (returns decoded data). |
+
+### Communication
+| Method | Description |
+| :--- | :--- |
+| `fetch_online` | Gets a list of currently online users. |
+| `chat_send(message, channel)` | Sends a chat message to a specific channel. |
+| `chat_fetch(channel)` | Retrieves chat history. |
 
 ---
 
