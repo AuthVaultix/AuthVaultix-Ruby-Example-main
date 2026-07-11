@@ -1,12 +1,12 @@
 require './authvaultix.rb'
 
+
 app = AuthVaultixClient.new(
     "", # Application Name
     "", # Application OwnerID
     "", # Application Secret
-    "1.0" # Applicaiton Version
+    "1.0" # Application Version
 )
-
 
 
 puts "Connecting..."

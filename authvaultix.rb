@@ -2,6 +2,7 @@ require 'net/http'
 require 'json'
 require 'uri'
 require 'base64'
+require 'rbconfig'
 
 module AuthVaultix
 
@@ -52,6 +53,119 @@ module AuthVaultix
     end
   end
 
+  class SystemInfoCollector
+    def self.windows?
+      RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/
+    end
+
+    def self.macos?
+      RbConfig::CONFIG['host_os'] =~ /darwin/
+    end
+
+    def self.linux?
+      RbConfig::CONFIG['host_os'] =~ /linux/
+    end
+
+    def self.get_os_version
+      if windows?
+        begin
+          caption = `powershell -Command "(Get-CimInstance Win32_OperatingSystem).Caption" 2>nul`.strip
+          caption = caption.sub("Microsoft ", "") if caption.start_with?("Microsoft ")
+          version = `powershell -Command "(Get-CimInstance Win32_OperatingSystem).Version" 2>nul`.strip
+          return "#{caption} (#{version})" unless caption.empty? || version.empty?
+        rescue
+        end
+        "Windows"
+      elsif macos?
+        begin
+          version = `sw_vers -productVersion 2>/dev/null`.strip
+          return "macOS (#{version})" unless version.empty?
+        rescue
+        end
+        "macOS"
+      elsif linux?
+        begin
+          version = `uname -sr 2>/dev/null`.strip
+          return version unless version.empty?
+        rescue
+        end
+        "Linux"
+      else
+        "Unknown OS"
+      end
+    end
+
+    def self.get_platform
+      "native"
+    end
+
+    def self.get_device_type
+      "Desktop"
+    end
+
+    def self.get_architecture
+      if windows?
+        ENV['PROCESSOR_ARCHITECTURE']&.upcase || "X64"
+      else
+        begin
+          arch = `uname -m 2>/dev/null`.strip.upcase
+          return arch unless arch.empty?
+        rescue
+        end
+        "X64"
+      end
+    end
+
+    def self.get_cpu_cores
+      if windows?
+        begin
+          physical_cores = `powershell -Command "(Get-CimInstance Win32_Processor).NumberOfCores" 2>nul`.strip
+          logical_processors = ENV['NUMBER_OF_PROCESSORS'] || "2"
+          cores = physical_cores.empty? ? logical_processors : physical_cores
+          return "#{cores} Cores / #{logical_processors} Threads"
+        rescue
+        end
+        "2 Cores / 2 Threads"
+      else
+        logical = "2"
+        begin
+          if macos?
+            logical = `sysctl -n hw.ncpu 2>/dev/null`.strip
+          else
+            logical = `nproc 2>/dev/null`.strip
+          end
+        rescue
+        end
+        "#{logical} Cores / #{logical} Threads"
+      end
+    end
+
+    def self.get_ram_gb
+      if windows?
+        begin
+          ram = `powershell -Command "[Math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)" 2>nul`.strip
+          return ram unless ram.empty?
+        rescue
+        end
+        "0"
+      elsif macos?
+        begin
+          bytes = `sysctl -n hw.memsize 2>/dev/null`.strip.to_i
+          return (bytes / (1024 * 1024 * 1024)).to_str if bytes > 0
+        rescue
+        end
+        "0"
+      else
+        begin
+          kb = `grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}'`.strip.to_i
+          return (kb / (1024 * 1024)).to_s if kb > 0
+        rescue
+        end
+        "0"
+      end
+    end
+  end
+
   class AuthVaultixCore
     attr_accessor :app_name, :owner_id, :secret, :version, :session_id, :initialized, :current_user
 
@@ -79,8 +193,8 @@ module AuthVaultix
     end
 
     def hwid
-      sid = `wmic useraccount where name='%username%' get sid /value 2>nul`
-      sid = sid.gsub("SID=", "").strip
+      sid = `powershell -Command "[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value" 2>nul`
+      sid = sid.strip
       sid.empty? ? "UNKNOWN_HWID" : sid
     rescue
       "UNKNOWN_HWID"
@@ -119,6 +233,12 @@ module AuthVaultix
                 .with_value("username", username)
                 .with_value("pass", password)
                 .with_value("hwid", hwid)
+                .with_value("os", SystemInfoCollector.get_os_version)
+                .with_value("platform", SystemInfoCollector.get_platform)
+                .with_value("device", SystemInfoCollector.get_device_type)
+                .with_value("architecture", SystemInfoCollector.get_architecture)
+                .with_value("cpu_cores", SystemInfoCollector.get_cpu_cores)
+                .with_value("ram", SystemInfoCollector.get_ram_gb)
                 .compile
 
       resp = NetworkAgent.post(BASE_URL, payload)
