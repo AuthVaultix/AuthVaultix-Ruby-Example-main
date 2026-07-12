@@ -204,7 +204,7 @@ module AuthVaultix
       return true if @initialized
 
       payload = PayloadBuilder.new("init")
-                .with_value("ver", @version)
+                  .with_value("ver", @version)
                 .with_value("name", @app_name)
                 .with_value("ownerid", @owner_id)
                 .compile
@@ -233,6 +233,7 @@ module AuthVaultix
                 .with_value("username", username)
                 .with_value("pass", password)
                 .with_value("hwid", hwid)
+                .with_value("version", @version)
                 .with_value("os", SystemInfoCollector.get_os_version)
                 .with_value("platform", SystemInfoCollector.get_platform)
                 .with_value("device", SystemInfoCollector.get_device_type)
@@ -285,6 +286,13 @@ module AuthVaultix
                 .with_value("key", license)
                 .with_value("email", email)
                 .with_value("hwid", hwid)
+                .with_value("version", @version)
+                .with_value("os", SystemInfoCollector.get_os_version)
+                .with_value("platform", SystemInfoCollector.get_platform)
+                .with_value("device", SystemInfoCollector.get_device_type)
+                .with_value("architecture", SystemInfoCollector.get_architecture)
+                .with_value("cpu_cores", SystemInfoCollector.get_cpu_cores)
+                .with_value("ram", SystemInfoCollector.get_ram_gb)
                 .compile
 
       resp = NetworkAgent.post(BASE_URL, payload)
@@ -308,6 +316,13 @@ module AuthVaultix
                 .with_context(@app_name, @owner_id, @session_id)
                 .with_value("key", license)
                 .with_value("hwid", hwid)
+                .with_value("version", @version)
+                .with_value("os", SystemInfoCollector.get_os_version)
+                .with_value("platform", SystemInfoCollector.get_platform)
+                .with_value("device", SystemInfoCollector.get_device_type)
+                .with_value("architecture", SystemInfoCollector.get_architecture)
+                .with_value("cpu_cores", SystemInfoCollector.get_cpu_cores)
+                .with_value("ram", SystemInfoCollector.get_ram_gb)
                 .compile
 
       resp = NetworkAgent.post(BASE_URL, payload)
